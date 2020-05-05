@@ -80,7 +80,7 @@ struct flb_kube {
     /* Configuration proposed through Annotations (boolean) */
     int k8s_logging_parser;   /* allow to process a suggested parser ? */
     int k8s_logging_exclude;  /* allowed to suggest to exclude logs ?  */
-
+    int k8s_logging_include;  /* allowed to suggest to exclude logs ?  */
     /* HTTP Client Setup */
     size_t buffer_size;
 
