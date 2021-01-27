@@ -50,16 +50,6 @@
 #define FLB_KAFKA_LOG_INFO    6
 #define FLB_KAFKA_LOG_DEBUG   7
 
-/* rdkafka log levels based on syslog(3) */
-#define FLB_KAFKA_LOG_EMERG   0
-#define FLB_KAFKA_LOG_ALERT   1
-#define FLB_KAFKA_LOG_CRIT    2
-#define FLB_KAFKA_LOG_ERR     3
-#define FLB_KAFKA_LOG_WARNING 4
-#define FLB_KAFKA_LOG_NOTICE  5
-#define FLB_KAFKA_LOG_INFO    6
-#define FLB_KAFKA_LOG_DEBUG   7
-
 #define FLB_JSON_DATE_DOUBLE      0
 #define FLB_JSON_DATE_ISO8601     1
 #define FLB_JSON_DATE_ISO8601_FMT "%Y-%m-%dT%H:%M:%S"
