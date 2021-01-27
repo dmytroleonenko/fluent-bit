@@ -750,6 +750,8 @@ static struct flb_config_map config_map[] = {
      *                        using the  pre-defined parser in the
      *                        value (e.g: apache).
      * - k8s-logging.exclude: Fluent Bit allows Pods to exclude themselves
+     * - k8s-logging.include: Fluent Bit allows Pods to include themselves
+     * when operation in include-only mode
      *
      * By default all options are disabled, so each option needs to
      * be enabled manually.
@@ -764,7 +766,11 @@ static struct flb_config_map config_map[] = {
      0, FLB_TRUE, offsetof(struct flb_kube, k8s_logging_exclude),
      "allow Pods to exclude themselves from the logging pipeline"
     },
-
+    {
+     FLB_CONFIG_MAP_BOOL, "k8s-logging.include", "false",
+     0, FLB_TRUE, offsetof(struct flb_kube, k8s_logging_include),
+     "allow Pods to include themselves into the logging pipeline"
+    },
     /* Use Systemd Journal mode ? */
     {
      FLB_CONFIG_MAP_BOOL, "use_journal", "false",

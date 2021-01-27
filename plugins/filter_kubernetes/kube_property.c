@@ -33,7 +33,8 @@
 #define FLB_KUBE_PROP_PARSER_LEN (sizeof(FLB_KUBE_PROP_PARSER) - 1)
 #define FLB_KUBE_PROP_EXCLUDE "exclude"
 #define FLB_KUBE_PROP_EXCLUDE_LEN (sizeof(FLB_KUBE_PROP_EXCLUDE) - 1)
-
+#define FLB_KUBE_PROP_INCLUDE "include"
+#define FLB_KUBE_PROP_INCLUDE_LEN (sizeof(FLB_KUBE_PROP_INCLUDE) - 1)
 static inline int prop_cmp(const char *key, size_t keylen,
                            const char *property, size_t proplen)
 {
@@ -141,7 +142,48 @@ static int prop_set_exclude(struct flb_kube *ctx, struct flb_kube_meta *meta,
 
     return 0;
 }
+static int prop_set_include(struct flb_kube *ctx, struct flb_kube_meta *meta,
+                            int is_container_specific, int stream,
+                            const char *val_buf, size_t val_len,
+                            struct flb_kube_props *props)
+{
+    char *tmp;
+    int exclude;
 
+    /* Exclude property must be allowed by k8s-logging.exclude */
+    if (ctx->k8s_logging_include == FLB_FALSE) {
+        prop_not_allowed("fluentbit.io/include", meta, ctx);
+        return -1;
+    }
+
+    /* Get the bool value */
+    tmp = flb_strndup(val_buf, val_len);
+    if (!tmp) {
+        flb_errno();
+        return -1;
+    }
+
+    exclude = flb_utils_bool(tmp) == FLB_TRUE ?
+              FLB_KUBE_PROP_FALSE : FLB_KUBE_PROP_TRUE;
+
+    /* Save the exclude property in the context */
+    if ((stream == FLB_KUBE_PROP_NO_STREAM ||
+         stream == FLB_KUBE_PROP_STREAM_STDOUT) &&
+        (is_container_specific == FLB_TRUE ||
+         props->stdout_exclude != FLB_KUBE_PROP_FALSE)) {
+        props->stdout_exclude = exclude;
+    }
+    if ((stream == FLB_KUBE_PROP_NO_STREAM ||
+         stream == FLB_KUBE_PROP_STREAM_STDERR) &&
+        (is_container_specific == FLB_TRUE ||
+         props->stderr_exclude != FLB_KUBE_PROP_FALSE)) {
+        props->stderr_exclude = exclude;
+    }
+
+    flb_free(tmp);
+
+    return 0;
+}
 int flb_kube_prop_set(struct flb_kube *ctx, struct flb_kube_meta *meta,
                       const char *prop, int prop_len,
                       const char *val_buf, size_t val_len,
@@ -173,6 +215,10 @@ int flb_kube_prop_set(struct flb_kube *ctx, struct flb_kube_meta *meta,
     else if (prop_cmp(FLB_KUBE_PROP_EXCLUDE, FLB_KUBE_PROP_EXCLUDE_LEN, prop, prop_len)) {
         function = prop_set_exclude;
         cur += FLB_KUBE_PROP_EXCLUDE_LEN;
+    }
+    else if (prop_cmp(FLB_KUBE_PROP_INCLUDE, FLB_KUBE_PROP_INCLUDE_LEN, prop, prop_len)) {
+        function = prop_set_include;
+        cur += FLB_KUBE_PROP_INCLUDE_LEN;
     }
     else {
         flb_plg_warn(ctx->ins, "unknown annotation 'fluentbit.io/%.*s' "
@@ -240,7 +286,7 @@ int flb_kube_prop_set(struct flb_kube *ctx, struct flb_kube_meta *meta,
                     val_buf, val_len, props);
 }
 
-int flb_kube_prop_pack(struct flb_kube_props *props,
+int flb_kube_prop_pack(struct flb_kube_props *props, struct flb_kube *ctx,
                        void **out_buf, size_t *out_size)
 {
     int size;
@@ -279,12 +325,18 @@ int flb_kube_prop_pack(struct flb_kube_props *props,
     if (props->stdout_exclude == FLB_KUBE_PROP_TRUE) {
         msgpack_pack_true(&pck);
     }
+    else if (props->stdout_exclude == FLB_KUBE_PROP_UNDEF && ctx->k8s_logging_include == FLB_TRUE){
+        msgpack_pack_true(&pck);
+    }
     else {
         msgpack_pack_false(&pck);
     }
 
     /* Index 3: FLB_KUBE_PROPS_STDERR_EXCLUDE */
     if (props->stderr_exclude == FLB_KUBE_PROP_TRUE) {
+        msgpack_pack_true(&pck);
+    }
+    else if (props->stderr_exclude == FLB_KUBE_PROP_UNDEF && ctx->k8s_logging_include == FLB_TRUE){
         msgpack_pack_true(&pck);
     }
     else {
