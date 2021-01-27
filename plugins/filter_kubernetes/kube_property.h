@@ -33,7 +33,7 @@ int flb_kube_prop_set(struct flb_kube *ctx, struct flb_kube_meta *meta,
                       const char *prop, int prop_len,
                       const char *val_buf, size_t val_len,
                       struct flb_kube_props *props);
-int flb_kube_prop_pack(struct flb_kube_props *props,
+int flb_kube_prop_pack(struct flb_kube_props *props, struct flb_kube *ctx,
                        void **out_buf, size_t *out_size);
 int flb_kube_prop_unpack(struct flb_kube_props *props, const char *buf, size_t size);
 void flb_kube_prop_destroy(struct flb_kube_props *props);
